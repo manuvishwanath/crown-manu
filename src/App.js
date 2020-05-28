@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect'
@@ -7,71 +7,69 @@ import './App.css';
 import SignInSignUp from './Pages/sign-in-and-sign-up/sign-in-and-sign-up.component'
 import HomePage from './Pages/homepage/homePage.component';
 import ShopPage from './Pages/shop/ShopPage.component';
-import Header from '../src/Components/Header/header.component';
-import Checkout from '../src/Pages/Checkout/checkoutPage.component'
+import Header from './Components/Header/header.component';
+import Checkout from './Pages/Checkout/checkoutPage.component'
 
-import { auth, createUserProfileDocument } from './firebase/firebase.utils';
-import { setCurrentUser } from './Redux/User/user.actions'
-import { selectCurrentUser } from './Redux/User/user.selector'
+import { selectCurrentUser } from './Redux/User/user.selector';
+import { checkUserSession } from './Redux/User/user.actions';
 
-class App extends React.Component {
+const App = ({ checkUserSession }) => {
 
-  unSubscribeFromAuth = null;
 
-  componentDidMount() {
-    const { setCurrentUser } = this.props;
-    this.unSubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
-      if (userAuth) {
-        const userRef = await createUserProfileDocument(userAuth);
-        userRef.onSnapshot(snapshot => {
-          setCurrentUser({
-            currentUser: {
-              id: snapshot.id,
-              ...snapshot.data(),
-            }
-          }, () => {
-            // console.log('==============User snapshot==============')
-            // console.log(snapshot);
-          })
-        });
-      }
-      else {
-        setCurrentUser(userAuth);
-      }
-      // console.log('==============User state==============')
-      // console.log(setCurrentUser);
-    });
-  }
+  useEffect(() => {
+    checkUserSession();
+  }, [checkUserSession])
+  //const { checkUserSession } = this.props;
 
-  componentWillUnmount() {
-    this.unSubscribeFromAuth();
-  }
+  // this.unSubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+  //   if (userAuth) {
+  //     const userRef = await createUserProfileDocument(userAuth);
+  //     userRef.onSnapshot(snapshot => {
+  //       setCurrentUser({
+  //         currentUser: {
+  //           id: snapshot.id,
+  //           ...snapshot.data(),
+  //         }
+  //       }, () => {
+  //         // console.log('==============User snapshot==============')
+  //         // console.log(snapshot);
+  //       })
+  //     });
+  //   }
+  //   else {
+  //     setCurrentUser(userAuth);
+  //   }
 
-  render() {
-    return (
-      <div >
-        <Header />
-        <Switch>
-          <Route exact path="/" component={HomePage} />
-          <Route path="/shop" component={ShopPage} />
-          <Route path="/checkout" component={Checkout} />
-          <Route exact path="/signin" render={
-            () => this.props.currentUser ?
-              <Redirect to='/' /> :
-              <SignInSignUp />
-          } />
-        </Switch>
-      </div>
-    );
-  }
+  //   // console.log('==============User state==============')
+  //   // console.log(setCurrentUser);
+  // });
+
+
+
+  return (
+    <div >
+      <Header />
+      <Switch>
+        <Route exact path="/" component={HomePage} />
+        <Route path="/shop" component={ShopPage} />
+        <Route path="/checkout" component={Checkout} />
+        <Route exact path="/signin" render={
+          () => this.props.currentUser ?
+            <Redirect to='/' /> :
+            <SignInSignUp />
+        } />
+      </Switch>
+    </div>
+  );
 }
+
 
 const mapStateToProps = (state) => createStructuredSelector({
   currentUser: selectCurrentUser
 });
 
-const dispatchToProps = dispatch => ({
-  setCurrentUser: user => dispatch(setCurrentUser(user))
+const mapDispatchToProps = (dispatch) => ({
+  checkUserSession: () => dispatch(checkUserSession())
 })
 
-export default connect(mapStateToProps, dispatchToProps)(App);
+export default connect(mapStateToProps, mapDispatchToProps)(App);
